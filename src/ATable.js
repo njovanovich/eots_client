@@ -1,16 +1,6 @@
 import React from 'react';
 import axios from 'axios';
 
-class ARow extends  React.Component{
-    render(){
-        return (
-            <tr>
-                {Object.values(this.props.row).map((rowItem)=>(<td>{rowItem}</td>))}
-            </tr>
-        );
-    }
-}
-
 class ATable extends React.Component{
     constructor(orops) {
         super(orops);
@@ -72,7 +62,13 @@ class ATable extends React.Component{
             <div style={this.props.style}>
                 <table>
                     <tbody>
-                    {this.state.rows.map((row, index)=>(<ARow key={index} row={row}/>))}
+                    {this.state.rows.map((row, index)=>(
+                        <tr>
+                            {row.map((rowItem)=>(
+                                <td>{rowItem}</td>
+                            ))}
+                        </tr>
+                    ))}
                     </tbody>
                 </table>
                 <div>Pages:

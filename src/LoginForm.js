@@ -1,12 +1,14 @@
 import React from 'react';
 import {AForm} from './AForm';
-
+import axios from "axios";
+import {setCookie, getCookie} from "./cookies";
 let indexForTabs = 0;
 
 class LoginForm extends AForm{
     componentDidMount(){
         this.setState({
             header: 'Login',
+            id: 'LoginForm',
             inputs: [
                 {
                     label: 'Email',
@@ -16,7 +18,7 @@ class LoginForm extends AForm{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "text",
                         name: "email",
                         placeholder: 'citizen@gmail.com',
@@ -32,7 +34,7 @@ class LoginForm extends AForm{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "password",
                         name: "password",
                         placeholder: 'Password',
@@ -43,15 +45,40 @@ class LoginForm extends AForm{
             ]
         });
     }
+    sendForm(data){
+        const token = getCookie("csrf-token");
+        let config = {
+            headers: {
+                'CSRF-Token': token
+            }
+        }
+        axios.post(this.props.action,data,config)
+            .then((response) => {
+                if (response.data.success) {
+                    this.setState({message: response.data.message});
+                    setCookie("userId",response.data.userId,1);
+                } else {
+                    this.setState({message: response.data.errorMessage});
+                    if (response.data.errorMessag == 'Bad CSRF Token'){
+                        this.props.show(0);
+                    }
+                }
+            })
+            .catch((error) => {
+                this.setState({message: 'Error posting form.'});
+                console.log(error);
+            });
+    }
     render() {
         return (
-            <form action={this.props.action} style={this.props.style}>
+            <form action={this.props.action} onSubmit={this.onSubmit} id={this.state.id} style={this.props.style}>
                 <h1>{this.state.header}</h1>
+                <div>{this.state.message}</div>
                 * is required.
                 <table>
                     <tbody>
                     {this.state.inputs.map((item, index) => (
-                        <tr valign="top">
+                        <tr valign="top" key={index}>
                             <td>
                                 {this.state.inputs[index].label}
                             </td>
@@ -66,14 +93,13 @@ class LoginForm extends AForm{
                                 </div>
                             </td>
                         </tr>
-
                     ))
                     }
                     </tbody>
                 </table>
                 <input type="button" value="Submit" onClick={this.onSubmit}/>
                 <p>
-                To register, <a tabIndex="1" href="#" onClick={this.props.show}>click here</a>
+                To register, <a name="loginFormHref" id="loginFormHref1" href="#" onClick={this.props.show}>click here</a>
                 </p>
             </form>
         );

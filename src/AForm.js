@@ -1,5 +1,6 @@
 import React from 'react';
-
+import axios from 'axios';
+import {setCookie, getCookie} from "./cookies";
 
 let indexForTabs = 0;
 
@@ -7,6 +8,8 @@ class AForm extends React.Component{
     constructor(props) {
         super(props);
         this.state = {
+            id: 'AForm',
+            message: '',
             inputs: [],
             header: '',
             valid: false
@@ -16,6 +19,7 @@ class AForm extends React.Component{
     }
     componentDidMount(){
         this.setState({
+            id: 'AForm',
             inputs: [
                 {
                     label: 'Email',
@@ -25,7 +29,7 @@ class AForm extends React.Component{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "text",
                         name: "email",
                         placeholder: 'citizen@gmail.com',
@@ -41,7 +45,7 @@ class AForm extends React.Component{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "password",
                         name: "password",
                         placeholder: 'Password',
@@ -57,11 +61,9 @@ class AForm extends React.Component{
         let validInput = true;
         for(let i=0;i<indexForTabs; i++){
             const input = this.state.inputs[i];
-
             if (input.required) {
                 const regex = input.regex;
                 const match = input.value.match(new RegExp(regex));
-
                 if (match) {
                     state.inputs[i].style = {display: 'none'};
                     this.setState(state);
@@ -69,14 +71,44 @@ class AForm extends React.Component{
                     state.inputs[i].style = {display: 'block', color: 'red'};
                     this.setState(state);
                 }
-                validInput &= match;
+                validInput &= (match.length > 0);
             }
         }
+        const formData = new FormData(document.getElementById(this.state.id));
+        let data = {};
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        this.sendForm(data);
+        e.preventDefault();
         return validInput;
+    }
+    sendForm(data){
+        const token = getCookie("csrf-token");
+        let config = {
+            headers: {
+                'CSRF-Token': token
+            }
+        }
+        axios.post(this.props.action,data,config)
+            .then((response) => {
+                if (response.data.success) {
+                    this.setState({message: response.data.message});
+                } else {
+                    this.setState({message: response.data.errorMessage});
+                    if (response.data.errorMessag == 'Bad CSRF Token'){
+                        this.props.show(0);
+                    }
+                }
+            })
+            .catch((error) => {
+                this.setState({message: 'Error posting form.'});
+                console.log(error);
+            });
     }
     onChange(e){
         const key = e.target.tabIndex;
-        if (key !== undefined && e.target.value) {
+        if (key !== undefined) {
             let state = this.state;
             const value = e.target.value;
             if (key < state.inputs.length) {
@@ -98,26 +130,26 @@ class AForm extends React.Component{
     }
     render(){
         return (
-            <form action={this.props.action} style={this.props.style}>
+            <form action={this.props.action} onSubmit={this.onSubmit} id={this.state.id} style={this.props.style}>
                 <h1>{this.state.header}</h1>
+                <div>{this.state.message}</div>
                 * is required.
                 <table><tbody>
                 {this.state.inputs.map((item,index)=>(
-                        <tr valign="top">
-                            <td>
+                        <tr valign="top" key={index}>
+                            <td align="left">
                                 {this.state.inputs[index].label}
                             </td>
-                            <td>
-                                <div>
+                            <td align="left">
+                                <div align="left">
                                     <span style={this.state.inputs[index].style}>{this.state.inputs[index].errorMessage}</span>
                                 </div>
-                                <div>
+                                <div align="left">
                                     {this.state.inputs[index].element}
                                     {this.state.inputs[index].required ? '*' : ''}
                                 </div>
                             </td>
                         </tr>
-
                     ))
                 }
                 </tbody></table>

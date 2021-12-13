@@ -1,5 +1,6 @@
 import React from 'react';
 import {AForm} from './AForm';
+import axios from "axios";
 
 let indexForTabs = 0;
 
@@ -7,6 +8,7 @@ class RegisterForm extends AForm{
     componentDidMount(){
         this.setState({
             header: 'Register',
+            id: 'RegisterForm',
             inputs: [
                 {
                     label: 'Email',
@@ -16,7 +18,7 @@ class RegisterForm extends AForm{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "text",
                         name: "email",
                         placeholder: 'citizen@gmail.com',
@@ -32,7 +34,7 @@ class RegisterForm extends AForm{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "password",
                         name: "password",
                         placeholder: 'Password',
@@ -48,7 +50,7 @@ class RegisterForm extends AForm{
                     value: '',
                     required: true,
                     element: React.createElement('input', {
-                        tabindex: indexForTabs++,
+                        tabIndex: indexForTabs++,
                         type: "password",
                         name: "password2",
                         placeholder: 'Second password',
@@ -60,17 +62,40 @@ class RegisterForm extends AForm{
         });
     }
     onSubmit(e){
-        super.onSubmit(e);
-        // check password vs password2
         let state = this.state;
-        if (this.state.inputs[1].value != this.state.inputs[2].value) {
+        let validInput = true;
+        for(let i=0;i<indexForTabs; i++){
+            const input = this.state.inputs[i];
+            if (input.required) {
+                const regex = input.regex;
+                const match = input.value.match(new RegExp(regex));
+                if (match) {
+                    state.inputs[i].style = {display: 'none'};
+                    this.setState(state);
+                } else {
+                    state.inputs[i].style = {display: 'block', color: 'red'};
+                    this.setState(state);
+                }
+                validInput &= (match.length > 0);
+            }
+        }
+        // check password vs password2
+        if (this.state.inputs[1].value !== this.state.inputs[2].value) {
             state.inputs[1].errorMessage = "Passwords do not match";
             state.inputs[2].errorMessage = "Passwords do not match";
             state.inputs[1].style = {display: 'block', color: 'red'};
             state.inputs[2].style = {display: 'block', color: 'red'};
             this.setState(state);
+        } else {
+            const formData = new FormData(document.getElementById(this.state.id));
+            let data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            this.sendForm(data);
         }
-
+        e.preventDefault();
+        return validInput;
     }
 }
 
